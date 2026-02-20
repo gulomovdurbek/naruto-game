@@ -2,183 +2,320 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Naruto: Shinobi Training</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Speed Racer Fixed</title>
     <style>
-        body { margin: 0; background: #87CEEB; color: white; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; overflow: hidden; }
+        body, html { margin: 0; padding: 0; overflow: hidden; background: #050505; font-family: 'Segoe UI', sans-serif; }
+        #wrapper { position: relative; width: 100vw; height: 100vh; display: flex; justify-content: center; background: #000; }
+        canvas { display: block; box-shadow: 0 0 50px rgba(0, 255, 255, 0.2); }
         
-        #ui { padding: 15px; font-size: 26px; background: rgba(0,0,0,0.5); width: 100%; text-align: center; font-weight: bold; }
-
-        /* ИГРОВАЯ ЗОНА */
-        #game { 
-            position: relative; 
-            width: 800px; 
-            height: 400px; 
-            margin-top: 50px; 
-            overflow: hidden; 
-            cursor: pointer;
+        /* Стили меню */
+        .overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 10; background: rgba(0,0,0,0.85); color: #00f3ff;
         }
-
-        /* ПЛАТФОРМА (Передний план из твоей ссылки) */
-        #platform {
-            position: absolute;
-            bottom: 0;
-            width: 200%; /* Ширина для анимации прокрутки */
-            height: 100px; /* Высота земли */
-            background: url('https://i.ibb.co/tMZxQHh9/1691174693-grizly-club-p-kartinki-personazh-dlya-2d-igri-bez-fona-52.png') repeat-x;
-            background-size: contain;
-            animation: moveGround 5s linear infinite;
-            z-index: 5;
-        }
-
-        @keyframes moveGround {
-            from { transform: translateX(0); }
-            to { transform: translateX(-50%); }
-        }
-
-        /* ГЕРОЙ (Из твоей новой ссылки) */
-        #player { 
-            position: absolute; 
-            width: 80px; 
-            height: 80px; 
-            bottom: 80px; /* Стоит на платформе */
-            left: 100px; 
-            background: url('https://i.ibb.co/fzZz7s95/1692279603-grizly-club-p-kartinki-igrok-dlya-2d-igri-bez-fona-36.png') no-repeat center; 
-            background-size: contain; 
-            z-index: 10;
-        }
-
-        /* СЮРИКЕН (Анимированный) */
-        .shuriken { 
-            position: absolute; 
-            width: 40px; 
-            height: 40px; 
-            background: url('https://i.imgur.com/vHTh7jC.png') no-repeat center; 
-            background-size: contain; 
-            animation: spin 0.3s infinite linear; 
-            z-index: 8;
-        }
-
-        @keyframes spin { 
-            from { transform: rotate(0deg); } 
-            to { transform: rotate(360deg); } 
-        }
-
-        /* ЭКРАНЫ */
-        .overlay { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.8); display: none; flex-direction: column; 
-            justify-content: center; align-items: center; z-index: 100; 
-        }
+        .hidden { display: none !important; }
         
-        .btn { 
-            padding: 15px 35px; background: #e67e22; border: 2px solid #fff; 
-            color: white; cursor: pointer; border-radius: 10px; 
-            font-weight: bold; font-size: 20px;
+        h1 { font-size: 3.5rem; text-transform: uppercase; text-shadow: 0 0 20px #00f3ff; margin-bottom: 30px; letter-spacing: 5px; }
+        button {
+            padding: 18px 45px; font-size: 1.3rem; background: transparent; 
+            border: 2px solid #ff00ff; color: #ff00ff; cursor: pointer; margin: 10px;
+            text-transform: uppercase; font-weight: bold; transition: 0.3s;
+            box-shadow: 0 0 10px rgba(255, 0, 255, 0.3);
+        }
+        button:hover { background: #ff00ff; color: white; box-shadow: 0 0 30px #ff00ff; }
+        
+        #hud {
+            position: absolute; top: 20px; width: 90%; display: flex; 
+            justify-content: space-between; pointer-events: none; z-index: 5;
+            color: #00f3ff; font-family: monospace; font-size: 1.5rem;
+            text-shadow: 2px 2px 5px #000;
         }
 
+        .shop-container { display: flex; gap: 15px; margin-bottom: 30px; }
+        .car-item { 
+            border: 2px solid #444; padding: 15px; text-align: center; 
+            background: #111; cursor: pointer; width: 120px;
+        }
+        .car-item.selected { border-color: #39ff14; box-shadow: 0 0 15px #39ff14; }
     </style>
 </head>
 <body>
 
-    <div id="ui">⏱️ ВРЕМЯ: <span id="timer">30</span>с</div>
-
-    <div id="game" onclick="jump()">
-        <div id="player"></div>
-        <div id="platform"></div>
-        
-        <div id="over" class="overlay">
-            <h1 style="color: #ff4d4d; font-size: 50px;">ПОРАЖЕНИЕ</h1>
-            <button class="btn" onclick="location.reload()">ПОПРОБОВАТЬ СНОВА</button>
-        </div>
-
-        <div id="win" class="overlay">
-            <h1 style="color: #2ecc71; font-size: 50px;">ПОБЕДА!</h1>
-            <button class="btn" onclick="location.reload()">ИГРАТЬ ЕЩЕ РАЗ</button>
-        </div>
+<div id="wrapper">
+    <div id="hud" class="hidden">
+        <div>SCORE: <span id="scoreVal">0</span></div>
+        <div>COINS: <span id="coinsVal">0</span></div>
     </div>
 
+    <div id="mainMenu" class="overlay">
+        <h1>Speed Racer</h1>
+        <button id="startBtn">START RACE</button>
+        <button id="garageBtn">GARAGE</button>
+    </div>
+
+    <div id="shopMenu" class="overlay hidden">
+        <h1>Garage</h1>
+        <div class="shop-container" id="shopItems"></div>
+        <button id="backBtn">BACK</button>
+    </div>
+
+    <div id="gameOver" class="overlay hidden">
+        <h1 style="color:#ff00ff">WRECKED!</h1>
+        <p id="finalScore" style="font-size: 1.5rem; color: #fff;"></p>
+        <button id="retryBtn">TRY AGAIN</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+</div>
+
 <script>
-    let isJumping = false;
-    let isGameOver = false;
-    let timeLeft = 30;
+/**
+ * Весь код завернут в безопасную структуру, 
+ * чтобы функции точно определились до начала игры.
+ */
+(function() {
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Глобальное состояние
+    let state = 'MENU';
+    let score = 0;
+    let coins = parseInt(localStorage.getItem('racer_coins')) || 0;
+    let speed = 5;
+    let roadOffset = 0;
+    let enemies = [];
+    let pickups = [];
+    let keys = {};
+    
+    // Данные машин
+    const cars = [
+        { name: "Neon", color: "#00f3ff", speedMod: 1, price: 0, owned: true },
+        { name: "Shadow", color: "#9d00ff", speedMod: 1.4, price: 500, owned: false },
+        { name: "Beast", color: "#ff0055", speedMod: 1.8, price: 1500, owned: false }
+    ];
+    let activeCarIdx = parseInt(localStorage.getItem('racer_car_idx')) || 0;
+    const ownedData = JSON.parse(localStorage.getItem('racer_owned')) || [true, false, false];
+    ownedData.forEach((owned, i) => cars[i].owned = owned);
 
-    const timerEl = document.getElementById('timer');
-    const player = document.getElementById('player');
-    const game = document.getElementById('game');
+    const player = { x: 0, y: 0, w: 45, h: 80, vx: 0 };
 
-    // Прыжок
-    function jump() {
-        if (isJumping || isGameOver) return;
-        isJumping = true;
-        let pos = 80; // Начальная высота на платформе
-        let up = setInterval(() => {
-            if (pos >= 240) {
-                clearInterval(up);
-                let down = setInterval(() => {
-                    if (pos <= 80) { 
-                        clearInterval(down); 
-                        isJumping = false; 
-                    }
-                    pos -= 8; 
-                    player.style.bottom = pos + 'px';
-                }, 20);
-            }
-            pos += 10; 
-            player.style.bottom = pos + 'px';
-        }, 20);
+    // Управление
+    window.addEventListener('keydown', e => keys[e.code] = true);
+    window.addEventListener('keyup', e => keys[e.code] = false);
+    
+    function resize() {
+        canvas.width = Math.min(window.innerWidth, 500);
+        canvas.height = window.innerHeight;
+        player.x = canvas.width / 2 - player.w / 2;
+        player.y = canvas.height - 130;
     }
+    window.addEventListener('resize', resize);
+    resize();
 
-    // Создание сюрикенов
-    function spawn() {
-        if (isGameOver) return;
-        const s = document.createElement('div');
-        s.className = 'shuriken';
-        let sx = 850;
-        s.style.left = sx + 'px';
-        // Либо летит низко (над землей), либо высоко (в прыжке)
-        s.style.bottom = (Math.random() > 0.5 ? '90px' : '170px');
-        game.appendChild(s);
-
-        let move = setInterval(() => {
-            if (isGameOver) { s.remove(); clearInterval(move); return; }
-            sx -= 11;
-            s.style.left = sx + 'px';
-
-            if (sx < -50) {
-                clearInterval(move);
-                s.remove();
-            }
-
-            // Столкновение
-            let pr = player.getBoundingClientRect();
-            let sr = s.getBoundingClientRect();
-            if (pr.right > sr.left+20 && pr.left < sr.right-20 && pr.bottom > sr.top+20 && pr.top < sr.bottom-20) {
-                gameOver();
-            }
-        }, 20);
-        setTimeout(spawn, 1200 + Math.random() * 1000);
-    }
-
-    function gameOver() {
-        isGameOver = true;
-        document.getElementById('over').style.display = 'flex';
-        document.getElementById('platform').style.animationPlayState = 'paused';
-    }
-
-    // Таймер
-    let clock = setInterval(() => {
-        if (isGameOver) return;
-        timeLeft--;
-        timerEl.innerText = timeLeft;
-        if (timeLeft <= 0) { 
-            clearInterval(clock);
-            isGameOver = true;
-            document.getElementById('win').style.display = 'flex';
+    // Отрисовка машины (без использования roundRect для совместимости)
+    function drawCar(x, y, color, isPlayer = false) {
+        ctx.save();
+        // Тень
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.fillRect(x + 4, y + 4, player.w, player.h);
+        
+        // Корпус
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, player.w, player.h);
+        
+        // Стекло
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(x + 5, y + 15, player.w - 10, 20);
+        
+        // Фары
+        ctx.fillStyle = isPlayer ? '#fff' : '#ffff00';
+        ctx.fillRect(x + 5, y, 10, 5); 
+        ctx.fillRect(x + player.w - 15, y, 10, 5);
+        
+        // Спойлер (если игрок)
+        if(isPlayer) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x - 2, y + player.h - 10, player.w + 4, 5);
         }
-    }, 1000);
+        ctx.restore();
+    }
 
-    document.addEventListener('keydown', (e) => { if(e.code === 'Space') jump(); });
-    spawn();
+    function update() {
+        if (state !== 'PLAYING') return;
+
+        speed += 0.002;
+        score += speed / 5;
+        roadOffset = (roadOffset + speed) % 100;
+
+        // Движение игрока
+        const accel = 0.8;
+        if (keys['ArrowLeft'] || keys['KeyA']) player.vx -= accel;
+        if (keys['ArrowRight'] || keys['KeyD']) player.vx += accel;
+        
+        player.vx *= 0.85; // Трение
+        player.x += player.vx;
+
+        // Границы трассы
+        if (player.x < 55) { player.x = 55; player.vx = 0; }
+        if (player.x > canvas.width - 55 - player.w) { player.x = canvas.width - 55 - player.w; player.vx = 0; }
+
+        // Спавн врагов
+        if (Math.random() < 0.02) {
+            enemies.push({ 
+                x: 60 + Math.random() * (canvas.width - 160), 
+                y: -100, 
+                col: hsl(${Math.random()*360}, 70%, 50%),
+                s: 2 + Math.random() * 3
+            });
+        }
+
+        // Спавн предметов
+        if (Math.random() < 0.01) {
+            pickups.push({ 
+                x: 70 + Math.random() * (canvas.width - 140), 
+                y: -50, 
+                type: Math.random() > 0.3 ? 'COIN' : 'OIL' 
+            });
+        }
+
+        // Обработка врагов
+        enemies.forEach((en, i) => {
+            en.y += speed * 0.7 + en.s;
+            if (en.y > canvas.height) enemies.splice(i, 1);
+            
+            // Коллизия
+            if (player.x < en.x + 40 && player.x + 40 > en.x && player.y < en.y + 70 && player.y + 70 > en.y) {
+                endGame();
+            }
+        });
+
+        // Обработка предметов
+        pickups.forEach((p, i) => {
+            p.y += speed;
+            if (p.y > canvas.height) pickups.splice(i, 1);
+            if (Math.abs(player.x - p.x) < 40 && Math.abs(player.y - p.y) < 40) {
+                if (p.type === 'COIN') { coins += 10; score += 100; }
+                else { speed *= 0.7; } // Масло замедляет
+                pickups.splice(i, 1);
+            }
+        });
+
+        document.getElementById('scoreVal').innerText = Math.floor(score);
+        document.getElementById('coinsVal').innerText = coins;
+    }
+
+    function draw() {
+        // Фон
+        ctx.fillStyle = '#111';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Дорога
+        ctx.fillStyle = '#222';
+        ctx.fillRect(50, 0, canvas.width - 100, canvas.height);
+
+        // Разметка
+        ctx.strokeStyle = '#fff';
+        ctx.setLineDash([30, 30]);
+        ctx.lineDashOffset = -roadOffset;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(canvas.width / 2, 0);
+        ctx.lineTo(canvas.width / 2, canvas.height);
+        ctx.stroke();
+
+        // Неоновые обочины
+        ctx.setLineDash([]);
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#00f3ff';
+        ctx.fillStyle = '#00f3ff';
+        ctx.fillRect(45, 0, 5, canvas.height);
+        ctx.fillRect(canvas.width - 50, 0, 5, canvas.height);
+        ctx.shadowBlur = 0;
+
+        // Предметы
+        pickups.forEach(p => {
+            ctx.fillStyle = p.type === 'COIN' ? '#ffd700' : '#555';
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.type === 'COIN' ? 10 : 15, 0, Math.PI*2);
+            ctx.fill();
+        });
+
+        // Враги и игрок
+        enemies.forEach(en => drawCar(en.x, en.y, en.col));
+        drawCar(player.x, player.y, cars[activeCarIdx].color, true);
+    }
+
+    function loop() {
+        update();
+        draw();
+        requestAnimationFrame(loop);
+    }
+
+    // Управление меню
+    function startGame() {
+        state = 'PLAYING';
+        score = 0;
+        speed = 5 * cars[activeCarIdx].speedMod;
+        enemies = [];
+        pickups = [];
+        document.getElementById('mainMenu').classList.add('hidden');
+        document.getElementById('gameOver').classList.add('hidden');
+        document.getElementById('hud').classList.remove('hidden');
+    }
+
+    function endGame() {
+        state = 'GAMEOVER';
+        document.getElementById('gameOver').classList.remove('hidden');
+        document.getElementById('finalScore').innerText = "Total Score: " + Math.floor(score);
+        localStorage.setItem('racer_coins', coins);
+    }
+
+    function renderShop() {
+        const container = document.getElementById('shopItems');
+        container.innerHTML = '';
+        cars.forEach((car, i) => {
+            const div = document.createElement('div');
+            div.className = car-item ${activeCarIdx === i ? 'selected' : ''};
+            div.style.color = car.color;
+            div.innerHTML = 
+                <strong>${car.name}</strong><br>
+                ${car.owned ? 'READY' : car.price + ' 🪙'}
+            ;
+            div.onclick = () => {
+                if (car.owned) {
+                    activeCarIdx = i;
+                    localStorage.setItem('racer_car_idx', i);
+                } else if (coins >= car.price) {
+                    coins -= car.price;
+                    car.owned = true;
+                    activeCarIdx = i;
+                    localStorage.setItem('racer_owned', JSON.stringify(cars.map(c => c.owned)));
+                    localStorage.setItem('racer_coins', coins);
+                }
+                renderShop();
+            };
+            container.appendChild(div);
+        });
+    }
+
+    // Привязка кнопок (вместо onclick в HTML)
+    document.getElementById('startBtn').onclick = startGame;
+    document.getElementById('retryBtn').onclick = startGame;
+    document.getElementById('garageBtn').onclick = () => {
+        document.getElementById('mainMenu').classList.add('hidden');
+        document.getElementById('shopMenu').classList.remove('hidden');
+        renderShop();
+    };
+    document.getElementById('backBtn').onclick = () => {
+        document.getElementById('shopMenu').classList.add('hidden');
+        document.getElementById('mainMenu').classList.remove('hidden');
+    };
+
+    // Запуск цикла
+    loop();
+})();
 </script>
 </body>
 </html>
