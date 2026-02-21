@@ -2,320 +2,409 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Speed Racer Fixed</title>
+    <title>Neon Catcher: Ultimate Edition</title>
     <style>
-        body, html { margin: 0; padding: 0; overflow: hidden; background: #050505; font-family: 'Segoe UI', sans-serif; }
-        #wrapper { position: relative; width: 100vw; height: 100vh; display: flex; justify-content: center; background: #000; }
-        canvas { display: block; box-shadow: 0 0 50px rgba(0, 255, 255, 0.2); }
-        
-        /* Стили меню */
-        .overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 10; background: rgba(0,0,0,0.85); color: #00f3ff;
+        :root { 
+            --neon: #00f7ff; 
+            --pink: #ff0055; 
+            --gold: #f1c40f; 
+            --bg: #050110;
         }
-        .hidden { display: none !important; }
         
-        h1 { font-size: 3.5rem; text-transform: uppercase; text-shadow: 0 0 20px #00f3ff; margin-bottom: 30px; letter-spacing: 5px; }
-        button {
-            padding: 18px 45px; font-size: 1.3rem; background: transparent; 
-            border: 2px solid #ff00ff; color: #ff00ff; cursor: pointer; margin: 10px;
-            text-transform: uppercase; font-weight: bold; transition: 0.3s;
-            box-shadow: 0 0 10px rgba(255, 0, 255, 0.3);
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+        body { 
+            margin: 0; 
+            background: var(--bg); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            font-family: 'Orbitron', sans-serif; 
+            color: white; 
+            overflow: hidden;
         }
-        button:hover { background: #ff00ff; color: white; box-shadow: 0 0 30px #ff00ff; }
         
-        #hud {
-            position: absolute; top: 20px; width: 90%; display: flex; 
-            justify-content: space-between; pointer-events: none; z-index: 5;
-            color: #00f3ff; font-family: monospace; font-size: 1.5rem;
-            text-shadow: 2px 2px 5px #000;
+        #main-wrapper { display: flex; gap: 30px; align-items: flex-start; }
+
+        #game-container {
+            position: relative; width: 400px; height: 600px;
+            background: #0d0221; border: 3px solid var(--neon);
+            box-shadow: 0 0 25px rgba(0, 247, 255, 0.3); overflow: hidden;
         }
 
-        .shop-container { display: flex; gap: 15px; margin-bottom: 30px; }
-        .car-item { 
-            border: 2px solid #444; padding: 15px; text-align: center; 
-            background: #111; cursor: pointer; width: 120px;
+        #leaderboard {
+            width: 250px; background: rgba(17, 5, 44, 0.9);
+            border: 2px solid var(--pink); padding: 20px; box-shadow: 0 0 20px var(--pink);
         }
-        .car-item.selected { border-color: #39ff14; box-shadow: 0 0 15px #39ff14; }
+        #leaderboard h3 { color: var(--pink); text-align: center; margin-top: 0; font-size: 1.2rem; }
+        .leader-entry { 
+            display: flex; justify-content: space-between; 
+            font-size: 18px; margin-bottom: 12px; color: var(--neon);
+            border-bottom: 1px solid rgba(255, 0, 85, 0.2); padding-bottom: 4px;
+        }
+        .top-record { color: var(--gold); border-color: var(--gold); text-shadow: 0 0 10px var(--gold); }
+
+        #shop-panel {
+            width: 220px; background: rgba(17, 5, 44, 0.9);
+            border: 2px solid var(--gold); padding: 20px; box-shadow: 0 0 20px var(--gold);
+        }
+        .shop-item { margin-bottom: 20px; text-align: center; }
+        .item-label { font-size: 10px; color: var(--gold); display: block; margin-bottom: 8px; text-transform: uppercase; }
+        .buy-btn { 
+            background: none; border: 1px solid var(--gold); color: var(--gold); 
+            cursor: pointer; padding: 8px; width: 100%; font-family: 'Orbitron';
+            transition: 0.3s; font-size: 12px;
+        }
+        .buy-btn:hover:not(:disabled) { background: var(--gold); color: black; }
+
+        #energy-container {
+            position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
+            width: 200px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px;
+        }
+        #energy-bar { width: 100%; height: 100%; background: var(--neon); box-shadow: 0 0 10px var(--neon); transition: 0.3s linear; }
+
+        .color-pickers { display: flex; justify-content: center; gap: 10px; margin-top: 10px; }
+        .color-btn { width: 30px; height: 30px; border: 2px solid white; cursor: pointer; border-radius: 4px; }
+
+        #toast {
+            position: absolute; top: -60px; left: 50%; transform: translateX(-50%);
+            background: var(--gold); color: black; padding: 12px 25px;
+            font-weight: bold; border-radius: 0 0 10px 10px; transition: 0.5s; z-index: 200;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        #player { position: absolute; bottom: 40px; left: 180px; width: 40px; height: 6px; background: var(--neon); box-shadow: 0 0 15px var(--neon); border-radius: 2px; transition: width 0.3s, background 0.3s; }
+        .star { position: absolute; width: 12px; height: 12px; background: #fff; border-radius: 50%; box-shadow: 0 0 15px var(--gold); }
+        .bomb { position: absolute; width: 14px; height: 14px; background: var(--pink); border-radius: 50%; box-shadow: 0 0 15px var(--pink); }
+
+        #ui { position: absolute; width: 100%; padding: 15px; display: flex; justify-content: space-between; z-index: 10; font-size: 14px; box-sizing: border-box; }
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5,1,16,0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; text-align: center; }
+        
+        input { 
+            background: transparent; border: 2px solid var(--neon); color: white; 
+            padding: 12px; text-align: center; margin-bottom: 15px; font-family: 'Orbitron'; outline: none;
+        }
+        .menu-btn { 
+            background: transparent; border: 2px solid var(--neon); color: var(--neon); 
+            padding: 15px 30px; font-weight: bold; cursor: pointer; font-family: 'Orbitron';
+            box-shadow: 0 0 10px var(--neon); transition: 0.3s; margin: 5px;
+        }
+        .menu-btn:hover:not(:disabled) { background: var(--neon); color: black; }
+        
+        #bonus-btn {
+            border-color: var(--gold); color: var(--gold); box-shadow: 0 0 10px var(--gold);
+            font-size: 10px; padding: 10px 20px;
+        }
+        #bonus-btn:disabled { opacity: 0.3; border-color: #555; color: #555; box-shadow: none; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
-<div id="wrapper">
-    <div id="hud" class="hidden">
-        <div>SCORE: <span id="scoreVal">0</span></div>
-        <div>COINS: <span id="coinsVal">0</span></div>
+<div id="toast">SYSTEM INITIALIZED</div>
+
+<div id="main-wrapper">
+    <div id="shop-panel">
+        <h3 style="color: var(--gold); margin-top:0">DATA SHOP</h3>
+        <p style="font-size: 14px">STARS: <span id="wallet" style="color: var(--gold)">0</span></p>
+        
+        <div class="shop-item">
+            <span class="item-label">WIDE PLATFORM</span>
+            <button class="buy-btn" onclick="buyUpgrade('wide', 50)">50 ⭐</button>
+        </div>
+        
+        <div class="shop-item">
+            <span class="item-label">SCORE MULTIPLIER X2</span>
+            <button class="buy-btn" onclick="buyUpgrade('double', 150)">150 ⭐</button>
+        </div>
+
+        <div class="shop-item">
+            <span class="item-label">PAINT SYSTEM</span>
+            <div class="color-pickers">
+                <div class="color-btn" style="background: #00f7ff" onclick="buyColor('#00f7ff', 20)"></div>
+                <div class="color-btn" style="background: #ff0055" onclick="buyColor('#ff0055', 20)"></div>
+                <div class="color-btn" style="background: #f1c40f" onclick="buyColor('#f1c40f', 20)"></div>
+            </div>
+        </div>
+        <p style="font-size: 9px; color: #555; text-align: center;">SPACE: SLOW MOTION</p>
     </div>
 
-    <div id="mainMenu" class="overlay">
-        <h1>Speed Racer</h1>
-        <button id="startBtn">START RACE</button>
-        <button id="garageBtn">GARAGE</button>
+    <div id="game-container">
+        <div id="ui">
+            <span id="score-display">SCORE: 0</span>
+            <span id="level-display">LVL: 1</span>
+        </div>
+
+        <div id="energy-container"><div id="energy-bar"></div></div>
+
+        <div id="overlay">
+            <h1 style="color: var(--neon); margin-bottom: 5px;">NEON</h1>
+            <h3 id="status-text" style="color: var(--pink); margin-top: 0; letter-spacing: 5px;">CATCHER</h3>
+            
+            <button id="bonus-btn" class="menu-btn" onclick="claimBonus()">CLAIM DAILY BONUS</button>
+            
+            <input type="text" id="username" placeholder="PILOT NAME" maxlength="10">
+            <button id="start-btn" class="menu-btn">ENGAGE</button>
+        </div>
+        <div id="player"></div>
     </div>
 
-    <div id="shopMenu" class="overlay hidden">
-        <h1>Garage</h1>
-        <div class="shop-container" id="shopItems"></div>
-        <button id="backBtn">BACK</button>
+    <div id="leaderboard">
+        <h3>RANKINGS</h3>
+        <div id="leader-list"></div>
     </div>
-
-    <div id="gameOver" class="overlay hidden">
-        <h1 style="color:#ff00ff">WRECKED!</h1>
-        <p id="finalScore" style="font-size: 1.5rem; color: #fff;"></p>
-        <button id="retryBtn">TRY AGAIN</button>
-    </div>
-
-    <canvas id="gameCanvas"></canvas>
 </div>
 
 <script>
-/**
- * Весь код завернут в безопасную структуру, 
- * чтобы функции точно определились до начала игры.
- */
-(function() {
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    
-    // Глобальное состояние
-    let state = 'MENU';
-    let score = 0;
-    let coins = parseInt(localStorage.getItem('racer_coins')) || 0;
-    let speed = 5;
-    let roadOffset = 0;
-    let enemies = [];
-    let pickups = [];
-    let keys = {};
-    
-    // Данные машин
-    const cars = [
-        { name: "Neon", color: "#00f3ff", speedMod: 1, price: 0, owned: true },
-        { name: "Shadow", color: "#9d00ff", speedMod: 1.4, price: 500, owned: false },
-        { name: "Beast", color: "#ff0055", speedMod: 1.8, price: 1500, owned: false }
+    const player = document.getElementById('player');
+    const container = document.getElementById('game-container');
+    const walletDisplay = document.getElementById('wallet');
+    const scoreDisplay = document.getElementById('score-display');
+    const toast = document.getElementById('toast');
+    const energyBar = document.getElementById('energy-bar');
+    const bonusBtn = document.getElementById('bonus-btn');
+
+    // Аудио движок
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(type) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+
+        if (type === 'collect') {
+            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+        } else if (type === 'boom') {
+            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+        } else if (type === 'deny') {
+            osc.type = 'square'; osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+            osc.frequency.setValueAtTime(70, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+        } else if (type === 'win') {
+            [440, 554, 659, 880].forEach((f, i) => {
+                const o = audioCtx.createOscillator();
+                const g = audioCtx.createGain();
+                o.connect(g); g.connect(audioCtx.destination);
+                o.frequency.setValueAtTime(f, audioCtx.currentTime + i*0.1);
+                g.gain.setValueAtTime(0.1, audioCtx.currentTime + i*0.1);
+                g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i*0.1 + 0.3);
+                o.start(audioCtx.currentTime + i*0.1); o.stop(audioCtx.currentTime + i*0.1 + 0.3);
+            });
+        }
+    }
+
+    let state = {
+        score: 0, level: 1, 
+        stars: parseInt(localStorage.getItem('stars')) || 0,
+        nick: 'Pilot', active: false, speed: 4, 
+        multiplier: 1, width: 40, color: '#00f7ff',
+        slowMo: false, abilityReady: true
+    };
+
+    // Обновленный список лидеров
+    let leaders = [
+        {name: 'RALF', score: 320},
+        {name: 'VANILOPA', score: 355}
     ];
-    let activeCarIdx = parseInt(localStorage.getItem('racer_car_idx')) || 0;
-    const ownedData = JSON.parse(localStorage.getItem('racer_owned')) || [true, false, false];
-    ownedData.forEach((owned, i) => cars[i].owned = owned);
 
-    const player = { x: 0, y: 0, w: 45, h: 80, vx: 0 };
-
-    // Управление
-    window.addEventListener('keydown', e => keys[e.code] = true);
-    window.addEventListener('keyup', e => keys[e.code] = false);
-    
-    function resize() {
-        canvas.width = Math.min(window.innerWidth, 500);
-        canvas.height = window.innerHeight;
-        player.x = canvas.width / 2 - player.w / 2;
-        player.y = canvas.height - 130;
-    }
-    window.addEventListener('resize', resize);
-    resize();
-
-    // Отрисовка машины (без использования roundRect для совместимости)
-    function drawCar(x, y, color, isPlayer = false) {
-        ctx.save();
-        // Тень
-        ctx.fillStyle = 'rgba(0,0,0,0.4)';
-        ctx.fillRect(x + 4, y + 4, player.w, player.h);
-        
-        // Корпус
-        ctx.fillStyle = color;
-        ctx.fillRect(x, y, player.w, player.h);
-        
-        // Стекло
-        ctx.fillStyle = 'rgba(0,0,0,0.6)';
-        ctx.fillRect(x + 5, y + 15, player.w - 10, 20);
-        
-        // Фары
-        ctx.fillStyle = isPlayer ? '#fff' : '#ffff00';
-        ctx.fillRect(x + 5, y, 10, 5); 
-        ctx.fillRect(x + player.w - 15, y, 10, 5);
-        
-        // Спойлер (если игрок)
-        if(isPlayer) {
-            ctx.fillStyle = color;
-            ctx.fillRect(x - 2, y + player.h - 10, player.w + 4, 5);
+    function claimBonus() {
+        const lastDate = localStorage.getItem('lastBonusDate');
+        const today = new Date().toDateString();
+        if (lastDate !== today) {
+            state.stars += 50;
+            localStorage.setItem('lastBonusDate', today);
+            saveData();
+            playSound('collect');
+            showToast("+50 STARS COLLECTED!");
+            checkBonusAvailability();
         }
-        ctx.restore();
     }
 
-    function update() {
-        if (state !== 'PLAYING') return;
-
-        speed += 0.002;
-        score += speed / 5;
-        roadOffset = (roadOffset + speed) % 100;
-
-        // Движение игрока
-        const accel = 0.8;
-        if (keys['ArrowLeft'] || keys['KeyA']) player.vx -= accel;
-        if (keys['ArrowRight'] || keys['KeyD']) player.vx += accel;
-        
-        player.vx *= 0.85; // Трение
-        player.x += player.vx;
-
-        // Границы трассы
-        if (player.x < 55) { player.x = 55; player.vx = 0; }
-        if (player.x > canvas.width - 55 - player.w) { player.x = canvas.width - 55 - player.w; player.vx = 0; }
-
-        // Спавн врагов
-        if (Math.random() < 0.02) {
-            enemies.push({ 
-                x: 60 + Math.random() * (canvas.width - 160), 
-                y: -100, 
-                col: hsl(${Math.random()*360}, 70%, 50%),
-                s: 2 + Math.random() * 3
-            });
+    function checkBonusAvailability() {
+        const lastDate = localStorage.getItem('lastBonusDate');
+        const today = new Date().toDateString();
+        if (lastDate === today) {
+            bonusBtn.disabled = true;
+            bonusBtn.innerText = "BONUS CLAIMED";
+        } else {
+            bonusBtn.disabled = false;
+            bonusBtn.innerText = "CLAIM DAILY BONUS";
         }
+    }
 
-        // Спавн предметов
-        if (Math.random() < 0.01) {
-            pickups.push({ 
-                x: 70 + Math.random() * (canvas.width - 140), 
-                y: -50, 
-                type: Math.random() > 0.3 ? 'COIN' : 'OIL' 
-            });
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && state.active && state.abilityReady) {
+            activateSlowMo();
         }
+    });
 
-        // Обработка врагов
-        enemies.forEach((en, i) => {
-            en.y += speed * 0.7 + en.s;
-            if (en.y > canvas.height) enemies.splice(i, 1);
-            
-            // Коллизия
-            if (player.x < en.x + 40 && player.x + 40 > en.x && player.y < en.y + 70 && player.y + 70 > en.y) {
-                endGame();
+    function activateSlowMo() {
+        state.abilityReady = false;
+        state.slowMo = true;
+        energyBar.style.width = '0%';
+        playSound('collect');
+        setTimeout(() => {
+            state.slowMo = false;
+            startRecharge();
+        }, 4000);
+    }
+
+    function startRecharge() {
+        let charge = 0;
+        let rechargeTimer = setInterval(() => {
+            charge += 1;
+            energyBar.style.width = (charge / 10) * 100 + '%';
+            if (charge >= 10) {
+                state.abilityReady = true;
+                clearInterval(rechargeTimer);
+                showToast("ABILITY READY", "var(--neon)");
             }
-        });
-
-        // Обработка предметов
-        pickups.forEach((p, i) => {
-            p.y += speed;
-            if (p.y > canvas.height) pickups.splice(i, 1);
-            if (Math.abs(player.x - p.x) < 40 && Math.abs(player.y - p.y) < 40) {
-                if (p.type === 'COIN') { coins += 10; score += 100; }
-                else { speed *= 0.7; } // Масло замедляет
-                pickups.splice(i, 1);
-            }
-        });
-
-        document.getElementById('scoreVal').innerText = Math.floor(score);
-        document.getElementById('coinsVal').innerText = coins;
+        }, 1000);
     }
 
-    function draw() {
-        // Фон
-        ctx.fillStyle = '#111';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // Дорога
-        ctx.fillStyle = '#222';
-        ctx.fillRect(50, 0, canvas.width - 100, canvas.height);
-
-        // Разметка
-        ctx.strokeStyle = '#fff';
-        ctx.setLineDash([30, 30]);
-        ctx.lineDashOffset = -roadOffset;
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.moveTo(canvas.width / 2, 0);
-        ctx.lineTo(canvas.width / 2, canvas.height);
-        ctx.stroke();
-
-        // Неоновые обочины
-        ctx.setLineDash([]);
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = '#00f3ff';
-        ctx.fillStyle = '#00f3ff';
-        ctx.fillRect(45, 0, 5, canvas.height);
-        ctx.fillRect(canvas.width - 50, 0, 5, canvas.height);
-        ctx.shadowBlur = 0;
-
-        // Предметы
-        pickups.forEach(p => {
-            ctx.fillStyle = p.type === 'COIN' ? '#ffd700' : '#555';
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.type === 'COIN' ? 10 : 15, 0, Math.PI*2);
-            ctx.fill();
-        });
-
-        // Враги и игрок
-        enemies.forEach(en => drawCar(en.x, en.y, en.col));
-        drawCar(player.x, player.y, cars[activeCarIdx].color, true);
+    function showToast(text, color = 'var(--gold)') {
+        toast.innerText = text;
+        toast.style.background = color;
+        toast.style.top = '0px';
+        setTimeout(() => toast.style.top = '-60px', 2000);
     }
 
-    function loop() {
-        update();
-        draw();
-        requestAnimationFrame(loop);
+    function buyUpgrade(type, cost) {
+        if (state.stars >= cost) {
+            state.stars -= cost;
+            if (type === 'wide') state.width = 75;
+            if (type === 'double') state.multiplier = 2;
+            playSound('collect');
+            saveData();
+            showToast("UPGRADE INSTALLED!");
+        } else {
+            playSound('deny');
+            showToast("NOT ENOUGH STARS", "var(--pink)");
+        }
     }
 
-    // Управление меню
-    function startGame() {
-        state = 'PLAYING';
-        score = 0;
-        speed = 5 * cars[activeCarIdx].speedMod;
-        enemies = [];
-        pickups = [];
-        document.getElementById('mainMenu').classList.add('hidden');
-        document.getElementById('gameOver').classList.add('hidden');
-        document.getElementById('hud').classList.remove('hidden');
+    function buyColor(hex, cost) {
+        if (state.stars >= cost) {
+            state.stars -= cost;
+            state.color = hex;
+            playSound('collect');
+            saveData();
+            showToast("PAINT APPLIED!", hex);
+        } else {
+            playSound('deny');
+            showToast("NOT ENOUGH STARS", "var(--pink)");
+        }
     }
 
-    function endGame() {
-        state = 'GAMEOVER';
-        document.getElementById('gameOver').classList.remove('hidden');
-        document.getElementById('finalScore').innerText = "Total Score: " + Math.floor(score);
-        localStorage.setItem('racer_coins', coins);
+    function saveData() {
+        localStorage.setItem('stars', state.stars);
+        walletDisplay.innerText = state.stars;
+        player.style.width = state.width + 'px';
+        player.style.backgroundColor = state.color;
+        player.style.boxShadow = `0 0 20px ${state.color}`;
     }
 
-    function renderShop() {
-        const container = document.getElementById('shopItems');
-        container.innerHTML = '';
-        cars.forEach((car, i) => {
-            const div = document.createElement('div');
-            div.className = car-item ${activeCarIdx === i ? 'selected' : ''};
-            div.style.color = car.color;
-            div.innerHTML = 
-                <strong>${car.name}</strong><br>
-                ${car.owned ? 'READY' : car.price + ' 🪙'}
-            ;
-            div.onclick = () => {
-                if (car.owned) {
-                    activeCarIdx = i;
-                    localStorage.setItem('racer_car_idx', i);
-                } else if (coins >= car.price) {
-                    coins -= car.price;
-                    car.owned = true;
-                    activeCarIdx = i;
-                    localStorage.setItem('racer_owned', JSON.stringify(cars.map(c => c.owned)));
-                    localStorage.setItem('racer_coins', coins);
+    function updateLeaderboard() {
+        const list = document.getElementById('leader-list');
+        const sorted = leaders.sort((a,b) => b.score - a.score).slice(0, 7);
+        list.innerHTML = sorted.map((e, i) => `
+            <div class="leader-entry ${i===0?'top-record':''}">
+                <span>${i+1}. ${e.name}</span><span>${e.score}</span>
+            </div>`).join('');
+    }
+
+    container.addEventListener('mousemove', (e) => {
+        if (!state.active) return;
+        let rect = container.getBoundingClientRect();
+        let x = e.clientX - rect.left - state.width / 2;
+        player.style.left = Math.max(0, Math.min(x, 400 - state.width)) + 'px';
+    });
+
+    document.getElementById('start-btn').onclick = () => {
+        const n = document.getElementById('username').value.trim();
+        if (!n) return showToast("ENTER NAME", "var(--pink)");
+        const un = n.toUpperCase();
+        if (un === 'DEN' || un === 'DENIS' || un === 'ARK') return showToast("NAME RESTRICTED", "var(--pink)");
+        state.nick = un;
+        state.score = 0; state.level = 1; state.active = true;
+        document.getElementById('overlay').style.display = 'none';
+        gameLoop();
+    };
+
+    function gameLoop() {
+        if (!state.active) return;
+        createObj();
+        setTimeout(gameLoop, Math.max(250, 1000 - state.level * 60));
+    }
+
+    function createObj() {
+        const obj = document.createElement('div');
+        const isBomb = Math.random() > 0.8;
+        obj.className = isBomb ? 'bomb' : 'star';
+        obj.style.left = Math.random() * 370 + 'px';
+        obj.style.top = '-20px';
+        container.appendChild(obj);
+
+        let y = -20;
+        let timer = setInterval(() => {
+            if (!state.active) { clearInterval(timer); obj.remove(); return; }
+            let currentSpeed = (state.speed + (state.level * 0.4)) * (state.slowMo ? 0.3 : 1);
+            y += currentSpeed;
+            obj.style.top = y + 'px';
+
+            let px = parseInt(player.style.left) || 180;
+            if (y > 550 && y < 565) {
+                let ox = parseInt(obj.style.left);
+                if (ox > px - 15 && ox < px + state.width) {
+                    if (isBomb) {
+                        playSound('boom');
+                        gameOver();
+                    } else {
+                        state.score += (1 * state.multiplier);
+                        state.stars += 1;
+                        scoreDisplay.innerText = "SCORE: " + state.score;
+                        playSound('collect');
+                        saveData();
+                        if (state.score % 10 === 0) {
+                            state.level++;
+                            document.getElementById('level-display').innerText = "LVL: " + state.level;
+                        }
+                        obj.remove(); clearInterval(timer);
+                    }
                 }
-                renderShop();
-            };
-            container.appendChild(div);
-        });
+            }
+            if (y > 600) { obj.remove(); clearInterval(timer); }
+        }, 20);
     }
 
-    // Привязка кнопок (вместо onclick в HTML)
-    document.getElementById('startBtn').onclick = startGame;
-    document.getElementById('retryBtn').onclick = startGame;
-    document.getElementById('garageBtn').onclick = () => {
-        document.getElementById('mainMenu').classList.add('hidden');
-        document.getElementById('shopMenu').classList.remove('hidden');
-        renderShop();
-    };
-    document.getElementById('backBtn').onclick = () => {
-        document.getElementById('shopMenu').classList.add('hidden');
-        document.getElementById('mainMenu').classList.remove('hidden');
-    };
+    function gameOver() {
+        state.active = false;
+        document.getElementById('overlay').style.display = 'flex';
+        document.getElementById('status-text').innerText = "FAILURE";
 
-    // Запуск цикла
-    loop();
-})();
+        const existingIndex = leaders.findIndex(l => l.name === state.nick);
+        if (existingIndex !== -1) {
+            if (state.score > leaders[existingIndex].score) leaders[existingIndex].score = state.score;
+        } else {
+            leaders.push({name: state.nick, score: state.score});
+        }
+        
+        leaders.sort((a,b) => b.score - a.score);
+        if (leaders[0].name === state.nick && state.score > 0) playSound('win');
+        
+        updateLeaderboard();
+        checkBonusAvailability();
+    }
+
+    checkBonusAvailability();
+    updateLeaderboard();
+    saveData();
 </script>
-</body>
+</body> 
 </html>
